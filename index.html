@@ -223,14 +223,14 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
     zoom: 8
   });
 
-  map.on('load', ()=>{
+  map.on('load', () => {
     map.addSource('result', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: []
-        }
-      });
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: []
+      }
+    });
 
     map.addLayer({
       id: 'result-fill',
@@ -242,13 +242,13 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
       }
     });
 
-     map.addLayer({
+    map.addLayer({
       id: 'result-circle',
       type: 'circle',
       source: 'result',
       paint: {
         'circle-color': '#22c55e',
-        'circle-opacity': 0.4
+        'circle-opacity': 0.6
       }
     });
 
@@ -261,15 +261,13 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
         'line-width': 2
       }
     });
-  })
+  });
 
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
   const updateMapGeoJSON = (geojson) => {
-    console.log('setting data:',geojson)
     if (map.getSource('result')) {
       map.getSource('result').setData(geojson);
-      return;
     }
   };
 
@@ -286,19 +284,17 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
 
       const rows = result.toArray();
       const columns = result.schema.fields.map(f => f.name);
-      console.log('COLS',columns)
 
       // Try to detect GeoJSON column
       const geojsonCol = columns.find(c => c.toLowerCase().includes('geojson'));
       if (geojsonCol) {
         try {
           const features = rows.map(r => {
-            const geometry = JSON.parse(r[geojsonCol])
-            const f = {
+            const geometry = JSON.parse(r[geojsonCol]);
+            return {
               type: 'Feature',
               geometry
-            }
-            return f
+            };
           });
           const fc = { type: 'FeatureCollection', features };
           updateMapGeoJSON(fc);
@@ -306,8 +302,6 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
           console.warn('Failed to render GeoJSON on map', e);
         }
       }
-
-(f => f.name);
 
       if (rows.length === 0) {
         output.innerHTML = '<p class="text-slate-400">Query executed successfully. No rows returned.</p>';
