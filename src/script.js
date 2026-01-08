@@ -35,7 +35,7 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
   console.log('DuckDB spatial extension loaded');
 
   // ---- MapLibre setup ----
-  const MAPTILER_KEY = 'NcKjWCCfscpXY8CdIPaN';
+  const MAPTILER_KEY = '$PUBLIC_APIKEY$';
 
   const map = new maplibregl.Map({
     container: 'map',
