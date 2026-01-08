@@ -45,35 +45,21 @@ FROM ST_Read('your_file.geojson');`
       };
 
       const editor = monaco.editor.create(document.getElementById('editor'), {
-        value: `-- Write your SQL here
-
+        value: `
+-- Write your SQL here
 -- Go to Eiffel Tower
-SELECT
-  ST_AsGeojson(geom) as geojson
-FROM (
-  SELECT ST_GeomFromGeoJSON(
-    json_extract(
-      '{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-              [2.29327242186318, 48.8582336385865],
-              [2.29450995917344, 48.857478942606],
-              [2.29571510025937, 48.8582718399929],
-              [2.29447090435531, 48.8590650303475],
-              [2.29327242186318, 48.8582336385865]
-            ],
-            []
-        ]
-      }
-    }'::json,
-      '$.geometry'
-    )
-  ) AS geom
-);
-;
+Select 
+  ST_AsGeojson(
+  ST_Transform(ST_Buffer(
+    ST_Transform(geojson, 'EPSG:4326', 'EPSG:3857'),200
+  ),'EPSG:3857', 'EPSG:4326')) as geojson
+
+from values ((ST_GeomFromGEOJSON('
+{
+  "type": "Point",
+  "coordinates": [2.29451510025937, 48.8582718399929]
+  
+}'::json))) as t (geojson)
 `,
         language: 'sql',
         theme: 'vs-dark',
