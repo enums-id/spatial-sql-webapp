@@ -83,9 +83,13 @@
       // Spatial SQL snippets
       const spatialSnippets = {
         read: `-- Read GeoJSON
-SELECT *
-FROM ST_Read('your_file.geojson')
-LIMIT 10;`,
+-- Read GeoJSON
+SELECT *,ST_AsGeojson(
+    geom
+) as geojson -- have a geojson column to render on the map
+FROM ST_Read('d.geojson')
+LIMIT 10;
+`,
 
         buffer: `-- Buffer geometries by 200 meters
 SELECT
