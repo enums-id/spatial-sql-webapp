@@ -409,7 +409,15 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
 
       const { columns, rows } = lastTable;
       const csv = [columns.join(',')]
-        .concat(rows.map(r => columns.map(c => JSON.stringify(r[c] ?? '')).join(',')))
+        .concat(
+          rows.map(r =>
+            columns.map(c => {
+              const v = r[c];
+              if (typeof v === 'bigint') return v.toString();
+              return JSON.stringify(v ?? '');
+            }).join(',')
+          )
+        )
         .join(`\n`);
 
       const blob = new Blob([csv], { type: 'text/csv' });
