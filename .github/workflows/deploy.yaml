@@ -34,7 +34,7 @@ jobs:
 
       - name: Inject MAPTILER API key
         run: |
-          sed -i "s|\$PUBLIC_APIKEY\$|${{ secrets.MAPTILER_KEY }}|g" ./src/script.js
+            sed -i "s|\$PUBLIC_APIKEY\$|${{ secrets.MAPTILER_KEY }}|g" ./src/script.js
 
       - name: Build
         run: npm run build
