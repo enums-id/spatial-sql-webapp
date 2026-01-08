@@ -19,67 +19,77 @@
   </style>
 </head>
 <body class="h-full bg-slate-950 text-slate-100">
-  <div class="flex h-screen w-screen">
+<div class="flex flex-col h-screen w-screen">
+  <div class="p-4 border-b border-slate-800 flex justify-start items-center">
+    <img src="https://cdn.simpleicons.org/duckdb/94a3b8" class="h-5 w-5" />
+    <h1 class="mx-4 text-xl text-white font-bold">
+  Spatial SQL
+  <span class="ml-1 text-sm font-normal text-white/70">
+    by Enums.id
+  </span>
+</h1>
 
-    <!-- Left Panel -->
-    <div class="flex w-1/2 flex-col border-r border-slate-800 bg-slate-900">
-      <!-- Toolbar -->
-      <div class="flex items-center gap-3 border-b border-slate-800 px-4 py-2">
-        <button id="executeBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500">
-          ▶ Execute
-        </button>
-        <label class="cursor-pointer rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
-          Upload file
-          <input type="file" id="fileInput" class="hidden" />
-        </label>
-      </div>
-
-      <!-- Uploaded Files -->
-      <div class="border-b border-slate-800 px-4 py-2">
-        <h4 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Uploaded files</h4>
-        <ul id="fileList" class="space-y-1 text-sm text-slate-200">
-          <li class="text-slate-500">No files uploaded</li>
-        </ul>
-      </div>
-
-      <!-- Spatial Helpers -->
-      <div class="border-b border-slate-800 px-4 py-2">
-        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Spatial helpers</h4>
-        <div class="flex flex-wrap gap-2">
-          <button data-snippet="read" class="snippet-btn">ST_Read</button>
-          <button data-snippet="buffer" class="snippet-btn">Buffer (meters)</button>
-          <button data-snippet="area" class="snippet-btn">Area</button>
-          <button data-snippet="centroid" class="snippet-btn">Centroid</button>
-          <button data-snippet="bbox" class="snippet-btn">BBox</button>
-        </div>
-      </div>
-
-      <!-- Monaco Editor -->
-      <div class="flex-1">
-        <div id="editor"></div>
-      </div>
-    </div>
-
-    <!-- Right Panel -->
-    <div class="w-1/2 bg-slate-950 p-6 flex flex-col gap-4">
-      <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold">Output</h3>
-        <div class="flex gap-2">
-          <button id="downloadGeoJSONBtn" class="hidden rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
-            ⬇ Download GeoJSON
-          </button>
-          <button id="downloadTableBtn" class="hidden rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
-            ⬇ Download Table
-          </button>
-        </div>
-      </div>
-      <div id="output" class="flex-1 overflow-auto rounded-md border border-slate-800 bg-slate-900 p-4 text-sm text-slate-200">
-        <p class="text-slate-400">Run a query to see results.</p>
-      </div>
-      <div class="h-64 rounded-md overflow-hidden border border-slate-800" id="map"></div>
-    </div>
-    </div>
   </div>
+    <div class="flex grow">
+      <!-- Left Panel -->
+      <div class="flex w-1/2 flex-col border-r border-slate-800 bg-slate-900">
+        <!-- Toolbar -->
+        <div class="flex items-center gap-3 border-b border-slate-800 px-4 py-2">
+          <button id="executeBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500">
+            ▶ Execute
+          </button>
+          <label class="cursor-pointer rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
+            Upload file
+            <input type="file" id="fileInput" class="hidden" />
+          </label>
+        </div>
+
+        <!-- Uploaded Files -->
+        <div class="border-b border-slate-800 px-4 py-2">
+          <h4 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Uploaded files</h4>
+          <ul id="fileList" class="space-y-1 text-sm text-slate-200">
+            <li class="text-slate-500">No files uploaded</li>
+          </ul>
+        </div>
+
+        <!-- Spatial Helpers -->
+        <div class="border-b border-slate-800 px-4 py-2">
+          <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Spatial helpers</h4>
+          <div class="flex flex-wrap gap-2">
+            <button data-snippet="read" class="snippet-btn">ST_Read</button>
+            <button data-snippet="buffer" class="snippet-btn">Buffer (meters)</button>
+            <button data-snippet="area" class="snippet-btn">Area</button>
+            <button data-snippet="centroid" class="snippet-btn">Centroid</button>
+            <button data-snippet="bbox" class="snippet-btn">BBox</button>
+          </div>
+        </div>
+
+        <!-- Monaco Editor -->
+        <div class="flex-1">
+          <div id="editor"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="w-1/2 bg-slate-950 p-6 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Output</h3>
+          <div class="flex gap-2">
+            <button id="downloadGeoJSONBtn" class="hidden rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
+              ⬇ Download GeoJSON
+            </button>
+            <button id="downloadTableBtn" class="hidden rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
+              ⬇ Download Table
+            </button>
+          </div>
+        </div>
+        <div id="output" class="flex-1 overflow-auto rounded-md border border-slate-800 bg-slate-900 p-4 text-sm text-slate-200">
+          <p class="text-slate-400">Run a query to see results.</p>
+        </div>
+        <div class="h-64 rounded-md overflow-hidden border border-slate-800" id="map"></div>
+      </div>
+    </div>
+</div>
 
   <!-- Monaco Loader -->
   <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
@@ -132,7 +142,34 @@ FROM ST_Read('your_file.geojson');`
 
       const editor = monaco.editor.create(document.getElementById('editor'), {
         value: `-- Write your SQL here
-SELECT 1;
+
+-- Go to Eiffel Tower
+SELECT
+  ST_AsGeojson(geom) as geojson
+FROM (
+  SELECT ST_GeomFromGeoJSON(
+    json_extract(
+      '{
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+              [2.29327242186318, 48.8582336385865],
+              [2.29450995917344, 48.857478942606],
+              [2.29571510025937, 48.8582718399929],
+              [2.29447090435531, 48.8590650303475],
+              [2.29327242186318, 48.8582336385865]
+            ],
+            []
+        ]
+      }
+    }'::json,
+      '$.geometry'
+    )
+  ) AS geom
+);
+;
 `,
         language: 'sql',
         theme: 'vs-dark',
