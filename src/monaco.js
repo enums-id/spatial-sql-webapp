@@ -10,14 +10,14 @@
         read: `-- Read GeoJSON
 SELECT *, ST_AsGeoJSON(geom) AS geojson
 FROM ST_Read('d.geojson')
-LIMIT 10;;`,
+LIMIT 10;`,
 
         buffer: `-- Buffer geometries by 200 meters
 SELECT
   ST_AsGeojson(
     ST_Transform(
       ST_Buffer(
-        ST_Transform(geom, 'EPSG:4326','EPSG:3857'),
+        ST_Transform(geom, 'EPSG:4326','EPSG:3857', always_xy := true),
         200
       ),
       'EPSG:3857',
@@ -29,7 +29,7 @@ FROM ST_Read('d.geojson');`,
         area: `-- Calculate area (square meters)
 SELECT
   ST_Area(
-    ST_Transform(geom, 'EPSG:4326','EPSG:3857')
+    ST_Transform(geom, 'EPSG:4326','EPSG:3857', always_xy := true)
   ) AS area_m2
 FROM ST_Read('your_file.geojson');`,
 
@@ -51,7 +51,7 @@ FROM ST_Read('your_file.geojson');`
 Select 
   ST_AsGeojson(
   ST_Transform(ST_Buffer(
-    ST_Transform(geojson, 'EPSG:4326', 'EPSG:3857'),200
+    ST_Transform(geojson, 'EPSG:4326', 'EPSG:3857', always_xy := true),200
   ),'EPSG:3857', 'EPSG:4326')) as geojson
 
 from values ((ST_GeomFromGEOJSON('
@@ -65,7 +65,7 @@ from values ((ST_GeomFromGEOJSON('
         theme: 'vs-dark',
         automaticLayout: true,
         minimap: { enabled: false },
-        fontSize: 14
+        fontSize: 12
       });
 
       // Expose editor immediately after creation
