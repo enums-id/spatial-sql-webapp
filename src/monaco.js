@@ -45,21 +45,21 @@ FROM ST_Read('your_file.geojson');`
       };
 
       const editor = monaco.editor.create(document.getElementById('editor'), {
-        value: `
--- Write your SQL here
+        value: `-- Write your SQL here
 -- Go to Eiffel Tower
 Select 
   ST_AsGeojson(
   ST_Transform(ST_Buffer(
     ST_Transform(geojson, 'EPSG:4326', 'EPSG:3857', always_xy := true),200
-  ),'EPSG:3857', 'EPSG:4326')) as geojson
+  ),'EPSG:3857', 'EPSG:4326', always_xy:=true)) as geojson
 
 from values ((ST_GeomFromGEOJSON('
 {
   "type": "Point",
-  "coordinates": [48.8582718399929, 2.29451510025937 ]
+  "coordinates": [2.29451510025937, 48.8582718399929 ]
   
 }'::json))) as t (geojson)
+
 `,
         language: 'sql',
         theme: 'vs-dark',
