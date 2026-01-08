@@ -61,7 +61,12 @@
 
     <!-- Right Panel -->
     <div class="w-1/2 bg-slate-950 p-6 flex flex-col gap-4">
-      <h3 class="text-lg font-semibold">Output</h3>
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Output</h3>
+        <button id="downloadGeoJSONBtn" class="hidden rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
+          ⬇ Download GeoJSON
+        </button>
+      </div>
       <div id="output" class="flex-1 overflow-auto rounded-md border border-slate-800 bg-slate-900 p-4 text-sm text-slate-200">
         <p class="text-slate-400">Run a query to see results.</p>
       </div>
@@ -83,29 +88,28 @@
       // Spatial SQL snippets
       const spatialSnippets = {
         read: `-- Read GeoJSON
--- Read GeoJSON
-SELECT *,ST_AsGeojson(
-    geom
-) as geojson -- have a geojson column to render on the map
+SELECT *, ST_AsGEOJSON(geom) as geojson
 FROM ST_Read('d.geojson')
-LIMIT 10;
-`,
+LIMIT 10;;`,
 
-        buffer: `-- Buffer geometries by 200 meters
+         buffer: `-- Buffer geometries by 200 meters
 SELECT
-  ST_Transform(
-    ST_Buffer(
-      ST_Transform(geom, 'EPSG:3857'),
-      200
-    ),
-    'EPSG:4326'
-  ) AS buffered_geom
-FROM ST_Read('your_file.geojson');`,
+  ST_AsGeojson(
+    ST_Transform(
+      ST_Buffer(
+        ST_Transform(geom, 'EPSG:4326','EPSG:3857'),
+        200
+      ),
+      'EPSG:3857',
+      'EPSG:4326'
+    )
+  ) AS geojson
+FROM ST_Read('d.geojson');`,
 
         area: `-- Calculate area (square meters)
 SELECT
   ST_Area(
-    ST_Transform(geom, 'EPSG:3857')
+    ST_Transform(geom, 'EPSG:4326','EPSG:3857')
   ) AS area_m2
 FROM ST_Read('your_file.geojson');`,
 
@@ -177,7 +181,6 @@ SELECT 1;
     });
   </script>
   <!-- DuckDB WASM (ESM, isolated from Monaco AMD loader) -->
-  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
 
 <script type="module">
@@ -269,13 +272,39 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
 
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
+  let lastGeoJSON = null;
+
   const updateMapGeoJSON = (geojson) => {
+    lastGeoJSON = geojson;
+    const btn = document.getElementById('downloadGeoJSONBtn');
+    if (btn) btn.classList.remove('hidden');
     if (map.getSource('result')) {
       map.getSource('result').setData(geojson);
     }
   };
 
   console.log('DuckDB ready');
+
+  // Download GeoJSON handler
+  const downloadBtn = document.getElementById('downloadGeoJSONBtn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      if (!lastGeoJSON) return;
+
+      const blob = new Blob([JSON.stringify(lastGeoJSON, null, 2)], {
+        type: 'application/geo+json'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'result.geojson';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
 
     // Expose global functions for Monaco / UI layer
   window.executeSQL = async (sql) => {
