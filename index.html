@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DuckDB SQL Webapp – Monaco Setup</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html, body {
+      height: 100%;
+    }
+
+    #editor {
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100">
+  <div class="flex h-screen w-screen">
+
+    <!-- Left Panel -->
+    <div class="flex w-1/2 flex-col border-r border-slate-800 bg-slate-900">
+      <!-- Toolbar -->
+      <div class="flex items-center gap-3 border-b border-slate-800 px-4 py-2">
+        <button id="executeBtn" class="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500">
+          ▶ Execute
+        </button>
+        <label class="cursor-pointer rounded-md bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700">
+          Upload file
+          <input type="file" id="fileInput" class="hidden" />
+        </label>
+      </div>
+
+      <!-- Monaco Editor -->
+      <div class="flex-1">
+        <div id="editor"></div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="w-1/2 bg-slate-950 p-6 flex flex-col">
+      <h3 class="mb-2 text-lg font-semibold">Output</h3>
+      <div id="output" class="flex-1 overflow-auto rounded-md border border-slate-800 bg-slate-900 p-4 text-sm text-slate-200">
+        <p class="text-slate-400">Run a query to see results.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monaco Loader -->
+  <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+  <script>
+    require.config({
+      paths: {
+        vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs'
+      }
+    });
+
+    require(['vs/editor/editor.main'], function () {
+      const editor = monaco.editor.create(document.getElementById('editor'), {
+        value: '-- Write your SQL here\nSELECT 1;\n',
+        language: 'sql',
+        theme: 'vs-dark',
+        automaticLayout: true,
+        minimap: { enabled: false },
+        fontSize: 14
+      });
+      window.editor = editor;
+
+      console.log("MONITOR MONACO", editor)
+
+      document.getElementById('fileInput').addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (!window.registerFile) {
+            console.warn('DuckDB not ready yet');
+            return;
+          }
+
+          await window.registerFile(file);
+        });(`Selected file: ${file.name}`);
+      });
+
+                  // Execute button -> call DuckDB when ready
+      document.getElementById('executeBtn').addEventListener('click', async () => {
+        console.log("window.editor:",window.editor)
+        console.log("typeof:",typeof window.editor)
+        const sql = window.editor.getValue();
+
+        if (!window.executeSQL) {
+          console.warn('DuckDB not ready yet');
+          return;
+        }
+
+        console.log('Executing SQL via DuckDB:');
+        await window.executeSQL(sql);
+      });
+
+      
+  </script>
+  <!-- DuckDB WASM (ESM, isolated from Monaco AMD loader) -->
+  <script type="module">
+import * as duckdb from '@duckdb/duckdb-wasm';
+import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
+import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
+import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
+import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+
+const MANUAL_BUNDLES = {
+    mvp: {
+        mainModule: duckdb_wasm,
+        mainWorker: mvp_worker,
+    },
+    eh: {
+        mainModule: duckdb_wasm_eh,
+        mainWorker: eh_worker,
+    },
+};
+
+const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+  const worker = new Worker(bundle.mainWorker);
+  const logger = new duckdb.ConsoleLogger();
+
+  const db = new duckdb.AsyncDuckDB(logger, worker);
+  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+
+  const conn = await db.connect();
+
+  // Install & load Spatial extension
+  // NOTE: Requires running from a proper HTTP origin (not file://)
+  await conn.query(`INSTALL spatial;`);
+  await conn.query(`LOAD spatial;`);
+
+  console.log('DuckDB spatial extension loaded');
+
+  console.log('DuckDB ready');
+
+    // Expose global functions for Monaco / UI layer
+  window.executeSQL = async (sql) => {
+    const output = document.getElementById('output');
+    output.innerHTML = '<p class="text-slate-400">Executing…</p>';
+
+    try {
+      const result = await conn.query(sql);
+      console.log('DuckDB result:', result);
+
+      const rows = result.toArray();
+      const columns = result.schema.fields.map(f => f.name);
+
+      if (rows.length === 0) {
+        output.innerHTML = '<p class="text-slate-400">Query executed successfully. No rows returned.</p>';
+        return;
+      }
+
+      let html = '<table class="min-w-full border-collapse">';
+      html += '<thead><tr>';
+      for (const col of columns) {
+        html += `<th class="border-b border-slate-700 px-3 py-2 text-left font-semibold">${col}</th>`;
+      }
+      html += '</tr></thead><tbody>';
+
+      for (const row of rows) {
+        html += '<tr>';
+        for (const col of columns) {
+          html += `<td class="border-b border-slate-800 px-3 py-1.5">${row[col]}</td>`;
+        }
+        html += '</tr>';
+      }
+
+      html += '</tbody></table>';
+      output.innerHTML = html;
+    } catch (err) {
+      console.error('DuckDB error:', err);
+      output.innerHTML = `<pre class="text-red-400 whitespace-pre-wrap">${err}</pre>`;
+    }
+  };
+
+  window.registerFile = async (file) => {
+    console.log('Registering file with DuckDB:', file.name);
+
+    const buffer = await file.arrayBuffer();
+    await db.registerFileBuffer(file.name, new Uint8Array(buffer));
+
+    const output = document.getElementById('output');
+    output.innerHTML = `<p class="text-slate-400">File <strong>${file.name}</strong> registered. You can now query it.</p>`;
+  };
+
+  // Smoke test
+  const test = await conn.query('SELECT 1 = 1 AS ok');
+  console.log('DuckDB smoke test:', test);
+</script>
+</body>
+</html>
