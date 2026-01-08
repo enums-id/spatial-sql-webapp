@@ -116,8 +116,45 @@
     </footer>
 </div>
 
+
+<div class="top-0 left-0 absolute h-screen w-screen z-10 bg-slate-900 flex items-center justify-center">
+    <div class="grid grid-cols-3 gap-1 ">
+      <div class="col-span-1 flex items-center justify-center">
+        <img src="https://cdn.simpleicons.org/duckdb/94a3b8" class="h-[4em]" />
+      </div>
+      <div class="col-span-2 flex items-center">    
+        <div class="flex-col justify-end items-start ">
+        <h1 class="text-xl text-white font-bold block text-start">
+        Spatial SQL WebApp
+        </h1>
+        <span class="text-sm font-normal text-white/70 block">
+          by 
+        <a href="https://enums.id" class="underline" target="_blank">
+          Enums.id</a>
+        powered by DuckDB
+      </span>
+      
+    </div>
+  </div>
+  <div class="col-span-3 flex justify-center p-2">
+      <div class="w-full h-1 bg-white/20 rounded overflow-hidden">
+          <div class="h-full w-full bg-white animate-loading mx-10"></div>
+      </div>
+  </div>
+</div>
+
   <!-- Monaco Loader -->
   <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <style>
+    @keyframes loading {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(50%); }
+      100% { transform: translateX(200%); }
+    }
+    .animate-loading {
+      animation: loading 1.2s ease-in-out infinite;
+    }
+  </style>
   <!-- DuckDB WASM (ESM, isolated from Monaco AMD loader) -->
 
 
