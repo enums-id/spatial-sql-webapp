@@ -117,7 +117,7 @@
 </div>
 
 
-<div class="top-0 left-0 absolute h-screen w-screen z-10 bg-slate-900 flex items-center justify-center">
+<div class="top-0 left-0 absolute h-screen w-screen z-10 bg-slate-900 flex items-center justify-center" id="loading-screen">
     <div class="grid grid-cols-3 gap-1 ">
       <div class="col-span-1 flex items-center justify-center">
         <img src="https://cdn.simpleicons.org/duckdb/94a3b8" class="h-[4em]" />
@@ -135,11 +135,16 @@
       </span>
       
     </div>
-  </div>
-  <div class="col-span-3 flex justify-center p-2">
+      </div>
+  
+  <div class="col-span-3 flex justify-center px-2 pt-4">
       <div class="w-full h-1 bg-white/20 rounded overflow-hidden">
           <div class="h-full w-full bg-white animate-loading mx-10"></div>
       </div>
+  </div>
+
+  <div class="col-span-3 text-xs text-slate-700 px-2">
+    Loading assets...
   </div>
 </div>
 

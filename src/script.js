@@ -8,6 +8,20 @@ import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?ur
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
 
+const loadingScreen = document.getElementById('loading-screen');
+let duckDbReady = false 
+let maplibreReady = false
+
+function removeLoadingScreen(){
+  if (duckDbReady && maplibreReady){
+    loadingScreen.style.transition = 'opacity 0.75s';
+    loadingScreen.style.opacity = '0';
+
+    setTimeout(() => loadingScreen.remove(), 750);
+    
+  }
+}
+
 const MANUAL_BUNDLES = {
     mvp: {
         mainModule: duckdb_wasm,
@@ -84,6 +98,10 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
         'line-width': 2
       }
     });
+
+    maplibreReady = true
+    console.log('maplibre ready')
+    removeLoadingScreen()
   });
 
   map.addControl(new maplibregl.NavigationControl(), 'top-right');
@@ -129,6 +147,9 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
   };
 
   console.log('DuckDB ready');
+  duckDbReady = true
+
+  removeLoadingScreen()
 
   // Expose SQL execution API for Monaco panel
   window.executeSQL = async (sql) => {
