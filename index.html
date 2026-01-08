@@ -23,13 +23,19 @@
   <div class="p-4 border-b border-slate-800 flex justify-start items-center">
     <img src="https://cdn.simpleicons.org/duckdb/94a3b8" class="h-5 w-5" />
     <h1 class="mx-4 text-xl text-white font-bold">
-  Spatial SQL
+  Spatial SQL WebApp
   <span class="ml-1 text-sm font-normal text-white/70">
-    by Enums.id
+    by 
+    
+    <a href="https://enums.id" class="underline" target="_blank">
+      Enums.id
+    </a>
+    powered by DuckDB
   </span>
+
 </h1>
 
-  </div>
+</div>
     <div class="flex grow">
       <!-- Left Panel -->
       <div class="flex w-1/2 flex-col border-r border-slate-800 bg-slate-900">
@@ -89,452 +95,30 @@
         <div class="h-64 rounded-md overflow-hidden border border-slate-800" id="map"></div>
       </div>
     </div>
+
+    <footer class="text-xs p-2 text-slate-300 border-t border-slate-800 flex justify-start items-center">
+      <span>
+        &#169; 2026 Enums.id 
+      </span>
+
+      <a href="https://github.com/enums-id/spatial-sql-webapp" target="_blank">
+        <span class="mx-4 flex items-center underline">
+          <img src="https://cdn.simpleicons.org/github/ffffff" class="h-3 w-3 inline" alt="GitHub"/>
+          <span class="px-1">
+            Github
+          </span>
+        </span>
+
+      </a>
+    </footer>
 </div>
 
   <!-- Monaco Loader -->
   <script src="https://unpkg.com/monaco-editor@0.45.0/min/vs/loader.js"></script>
-  <script>
-    require.config({
-      paths: {
-        vs: 'https://unpkg.com/monaco-editor@0.45.0/min/vs'
-      }
-    });
-
-    require(['vs/editor/editor.main'], function () {
-      // Spatial SQL snippets
-      const spatialSnippets = {
-        read: `-- Read GeoJSON
-SELECT *, ST_AsGeoJSON(geom) AS geojson
-FROM ST_Read('d.geojson')
-LIMIT 10;;`,
-
-        buffer: `-- Buffer geometries by 200 meters
-SELECT
-  ST_AsGeojson(
-    ST_Transform(
-      ST_Buffer(
-        ST_Transform(geom, 'EPSG:4326','EPSG:3857'),
-        200
-      ),
-      'EPSG:3857',
-      'EPSG:4326'
-    )
-  ) AS geojson
-FROM ST_Read('d.geojson');`,
-
-        area: `-- Calculate area (square meters)
-SELECT
-  ST_Area(
-    ST_Transform(geom, 'EPSG:4326','EPSG:3857')
-  ) AS area_m2
-FROM ST_Read('your_file.geojson');`,
-
-        centroid: `-- Compute centroid
-SELECT
-  ST_AsText(ST_Centroid(geom)) AS centroid
-FROM ST_Read('your_file.geojson');`,
-
-        bbox: `-- Bounding box
-SELECT
-  ST_AsText(ST_Envelope(geom)) AS bbox
-FROM ST_Read('your_file.geojson');`
-      };
-
-      const editor = monaco.editor.create(document.getElementById('editor'), {
-        value: `-- Write your SQL here
-
--- Go to Eiffel Tower
-SELECT
-  ST_AsGeojson(geom) as geojson
-FROM (
-  SELECT ST_GeomFromGeoJSON(
-    json_extract(
-      '{
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-              [2.29327242186318, 48.8582336385865],
-              [2.29450995917344, 48.857478942606],
-              [2.29571510025937, 48.8582718399929],
-              [2.29447090435531, 48.8590650303475],
-              [2.29327242186318, 48.8582336385865]
-            ],
-            []
-        ]
-      }
-    }'::json,
-      '$.geometry'
-    )
-  ) AS geom
-);
-;
-`,
-        language: 'sql',
-        theme: 'vs-dark',
-        automaticLayout: true,
-        minimap: { enabled: false },
-        fontSize: 14
-      });
-
-      // Expose editor immediately after creation
-      window.editor = editor;
-
-      // Wire spatial helper buttons
-      document.querySelectorAll('.snippet-btn').forEach(btn => {
-        btn.className = 'snippet-btn rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700';
-        btn.addEventListener('click', () => {
-          const key = btn.dataset.snippet;
-          const snippet = spatialSnippets[key];
-          if (!snippet) return;
-
-          editor.setValue(snippet);
-          editor.focus();
-        });
-      });
-
-      document.getElementById('fileInput').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (!window.registerFile) {
-          console.warn('DuckDB not ready yet');
-          return;
-        }
-
-        await window.registerFile(file);
-
-        // Allow re-selecting the same file again
-        e.target.value = '';
-      });
-
-      // Execute button -> call DuckDB when ready
-      document.getElementById('executeBtn').addEventListener('click', async () => {
-        const sql = editor.getValue();
-
-        if (!window.executeSQL) {
-          console.warn('DuckDB not ready yet');
-          return;
-        }
-
-        console.log('Executing SQL via DuckDB:');
-        await window.executeSQL(sql);
-      });
-    });
-  </script>
+  <script src="./src/monaco.js"></script>
   <!-- DuckDB WASM (ESM, isolated from Monaco AMD loader) -->
 
 
-
-<script type="module">
-  //NcKjWCCfscpXY8CdIPaN
-import * as turf from '@turf/turf'
-import maplibregl from 'maplibre-gl';
-import * as duckdb from '@duckdb/duckdb-wasm';
-import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
-import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
-import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
-import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
-
-const MANUAL_BUNDLES = {
-    mvp: {
-        mainModule: duckdb_wasm,
-        mainWorker: mvp_worker,
-    },
-    eh: {
-        mainModule: duckdb_wasm_eh,
-        mainWorker: eh_worker,
-    },
-};
-// Select a bundle based on browser checks
-const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-
-  const worker = new Worker(bundle.mainWorker);
-  const logger = new duckdb.ConsoleLogger();
-
-  const db = new duckdb.AsyncDuckDB(logger, worker);
-  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-
-  const conn = await db.connect();
-
-  // Install & load Spatial extension
-  // NOTE: Requires running from a proper HTTP origin (not file://)
-  await conn.query(`INSTALL spatial;`);
-  await conn.query(`LOAD spatial;`);
-
-  console.log('DuckDB spatial extension loaded');
-
-  // ---- MapLibre setup ----
-  const MAPTILER_KEY = 'NcKjWCCfscpXY8CdIPaN';
-
-  const map = new maplibregl.Map({
-    container: 'map',
-    style: `https://api.maptiler.com/maps/streets/style.json?key=${MAPTILER_KEY}`,
-    center: [0, 51.3],
-    zoom: 8
-  });
-
-  map.on('load', () => {
-    map.addSource('result', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: []
-      }
-    });
-
-    map.addLayer({
-      id: 'result-fill',
-      type: 'fill',
-      source: 'result',
-      paint: {
-        'fill-color': '#22c55e',
-        'fill-opacity': 0.4
-      }
-    });
-
-    map.addLayer({
-      id: 'result-circle',
-      type: 'circle',
-      source: 'result',
-      paint: {
-        'circle-color': '#22c55e',
-        'circle-opacity': 0.6
-      }
-    });
-
-    map.addLayer({
-      id: 'result-line',
-      type: 'line',
-      source: 'result',
-      paint: {
-        'line-color': '#22c55e',
-        'line-width': 2
-      }
-    });
-  });
-
-  map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-  let lastGeoJSON = null;
-  let lastTable = null;
-
-  const resetMap = () => {
-    lastGeoJSON = null;
-    const geoBtn = document.getElementById('downloadGeoJSONBtn');
-    const tblBtn = document.getElementById('downloadTableBtn');
-    if (geoBtn) geoBtn.classList.add('hidden');
-    if (tblBtn) tblBtn.classList.remove('hidden');
-
-    if (map.getSource('result')) {
-      map.getSource('result').setData({
-        type: 'FeatureCollection',
-        features: []
-      });
-    }
-  };
-
-  const updateMapGeoJSON = (geojson) => {
-    lastGeoJSON = geojson;
-    const geoBtn = document.getElementById('downloadGeoJSONBtn');
-    const tblBtn = document.getElementById('downloadTableBtn');
-    if (geoBtn) geoBtn.classList.remove('hidden');
-    if (tblBtn) tblBtn.classList.add('hidden');
-
-    if (map.getSource('result')) {
-      map.getSource('result').setData(geojson);
-
-      try {
-        const bbox = turf.bbox(geojson);
-        map.fitBounds([[bbox[0], bbox[1]],[bbox[2], bbox[3]]], {
-          padding: 40,
-          duration: 600
-        });
-      } catch (e) {
-        console.warn('Failed to fit map to GeoJSON bounds', e);
-      }
-    }
-  };
-
-  console.log('DuckDB ready');
-
-  // Expose SQL execution API for Monaco panel
-  window.executeSQL = async (sql) => {
-    const output = document.getElementById('output');
-    output.innerHTML = '<p class="text-slate-400">Executing…</p>';
-
-    try {
-      const result = await conn.query(sql);
-
-      const rows = result.toArray();
-      const columns = result.schema.fields.map(f => f.name);
-      lastTable = { rows, columns };
-
-      // Detect GeoJSON column
-      const geojsonCol = columns.find(c => c.toLowerCase().includes('geojson'));
-      if (geojsonCol) {
-        try {
-          const features = rows.map(r => {
-            const geometry = JSON.parse(r[geojsonCol]);
-            return { type: 'Feature', geometry };
-          });
-          updateMapGeoJSON({ type: 'FeatureCollection', features });
-        } catch (e) {
-          console.warn('GeoJSON parse failed, falling back to table', e);
-          resetMap();
-        }
-      } else {
-        resetMap();
-      }
-
-      if (rows.length === 0) {
-        output.innerHTML = '<p class="text-slate-400">Query executed successfully. No rows returned.</p>';
-        return;
-      }
-
-      let html = '<table class="min-w-full border-collapse">';
-      html += '<thead><tr>';
-      for (const col of columns) {
-        html += `<th class="border-b border-slate-700 px-3 py-2 text-left font-semibold">${col}</th>`;
-      }
-      html += '</tr></thead><tbody>';
-
-      for (const row of rows) {
-        html += '<tr>';
-        for (const col of columns) {
-          html += `<td class="border-b border-slate-800 px-3 py-1.5">${row[col]}</td>`;
-        }
-        html += '</tr>';
-      }
-
-      html += '</tbody></table>';
-      output.innerHTML = html;
-    } catch (err) {
-      console.error('DuckDB error:', err);
-      output.innerHTML = `<pre class="text-red-400 whitespace-pre-wrap">${err}</pre>`;
-      resetMap();
-    }
-  };
-
-  // Download GeoJSON handler
-  const downloadGeoBtn = document.getElementById('downloadGeoJSONBtn');
-  const downloadTableBtn = document.getElementById('downloadTableBtn');
-
-  if (downloadGeoBtn) {
-    downloadGeoBtn.addEventListener('click', () => {
-      if (!lastGeoJSON) return;
-
-      const blob = new Blob([JSON.stringify(lastGeoJSON, null, 2)], {
-        type: 'application/geo+json'
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'result.geojson';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  if (downloadTableBtn) {
-    downloadTableBtn.addEventListener('click', () => {
-      if (!lastTable || !lastTable.columns) return;
-
-      const { columns, rows } = lastTable;
-      const csv = [columns.join(',')]
-        .concat(
-          rows.map(r =>
-            columns.map(c => {
-              const v = r[c];
-              if (typeof v === 'bigint') return v.toString();
-              return JSON.stringify(v ?? '');
-            }).join(',')
-          )
-        )
-        .join(`\n`);
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'result.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  };
-
-    const registeredFiles = [];
-
-  window.registerFile = async (file) => {
-    console.log('Registering file with DuckDB:', file.name);
-
-    const buffer = await file.arrayBuffer();
-    await db.registerFileBuffer(file.name, new Uint8Array(buffer));
-
-    // Track registered files
-    if (!registeredFiles.includes(file.name)) {
-      registeredFiles.push(file.name);
-    }
-
-    const list = document.getElementById('fileList');
-    list.innerHTML = '';
-
-    const renderList = () => {
-      list.innerHTML = '';
-      if (registeredFiles.length === 0) {
-        list.innerHTML = '<li class="text-slate-500">No files uploaded</li>';
-        return;
-      }
-
-      for (const name of registeredFiles) {
-        const li = document.createElement('li');
-        li.className = 'flex items-center justify-between gap-2 font-mono text-xs text-slate-300';
-
-        const span = document.createElement('span');
-        span.textContent = name;
-
-        const btn = document.createElement('button');
-        btn.textContent = '✕';
-        btn.className = 'text-slate-500 hover:text-red-400';
-        btn.title = 'Remove file';
-
-        btn.addEventListener('click', async () => {
-          try {
-            await db.dropFile(name);
-          } catch (e) {
-            console.warn('Failed to drop file from DuckDB:', e);
-          }
-
-          const idx = registeredFiles.indexOf(name);
-          if (idx !== -1) registeredFiles.splice(idx, 1);
-
-          const fileInput = document.getElementById('fileInput');
-          if (fileInput) fileInput.value = '';
-
-          renderList();
-        });
-
-        li.appendChild(span);
-        li.appendChild(btn);
-        list.appendChild(li);
-      }
-    };
-
-    renderList();
-
-    const output = document.getElementById('output');
-    output.innerHTML = `<p class="text-slate-400">File <strong>${file.name}</strong> registered. You can now query it.</p>`;
-  };
-
-  // Smoke test
-  const test = await conn.query('SELECT 1 = 1 AS ok');
-  console.log('DuckDB smoke test:', test);
-</script>
+<script type="module" src="./src/script.js"></script>
 </body>
 </html>
