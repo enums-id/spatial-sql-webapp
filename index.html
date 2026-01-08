@@ -33,6 +33,26 @@
         </label>
       </div>
 
+      <!-- Uploaded Files -->
+      <div class="border-b border-slate-800 px-4 py-2">
+        <h4 class="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Uploaded files</h4>
+        <ul id="fileList" class="space-y-1 text-sm text-slate-200">
+          <li class="text-slate-500">No files uploaded</li>
+        </ul>
+      </div>
+
+      <!-- Spatial Helpers -->
+      <div class="border-b border-slate-800 px-4 py-2">
+        <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Spatial helpers</h4>
+        <div class="flex flex-wrap gap-2">
+          <button data-snippet="read" class="snippet-btn">ST_Read</button>
+          <button data-snippet="buffer" class="snippet-btn">Buffer (meters)</button>
+          <button data-snippet="area" class="snippet-btn">Area</button>
+          <button data-snippet="centroid" class="snippet-btn">Centroid</button>
+          <button data-snippet="bbox" class="snippet-btn">BBox</button>
+        </div>
+      </div>
+
       <!-- Monaco Editor -->
       <div class="flex-1">
         <div id="editor"></div>
@@ -58,36 +78,87 @@
     });
 
     require(['vs/editor/editor.main'], function () {
+      // Spatial SQL snippets
+      const spatialSnippets = {
+        read: `-- Read GeoJSON
+SELECT *
+FROM ST_Read('your_file.geojson')
+LIMIT 10;`,
+
+        buffer: `-- Buffer geometries by 200 meters
+SELECT
+  ST_Transform(
+    ST_Buffer(
+      ST_Transform(geom, 'EPSG:3857'),
+      200
+    ),
+    'EPSG:4326'
+  ) AS buffered_geom
+FROM ST_Read('your_file.geojson');`,
+
+        area: `-- Calculate area (square meters)
+SELECT
+  ST_Area(
+    ST_Transform(geom, 'EPSG:3857')
+  ) AS area_m2
+FROM ST_Read('your_file.geojson');`,
+
+        centroid: `-- Compute centroid
+SELECT
+  ST_AsText(ST_Centroid(geom)) AS centroid
+FROM ST_Read('your_file.geojson');`,
+
+        bbox: `-- Bounding box
+SELECT
+  ST_AsText(ST_Envelope(geom)) AS bbox
+FROM ST_Read('your_file.geojson');`
+      };
+
       const editor = monaco.editor.create(document.getElementById('editor'), {
-        value: '-- Write your SQL here\nSELECT 1;\n',
+        value: `-- Write your SQL here
+SELECT 1;
+`,
         language: 'sql',
         theme: 'vs-dark',
         automaticLayout: true,
         minimap: { enabled: false },
         fontSize: 14
       });
+
+      // Expose editor immediately after creation
       window.editor = editor;
 
-      console.log("MONITOR MONACO", editor)
+      // Wire spatial helper buttons
+      document.querySelectorAll('.snippet-btn').forEach(btn => {
+        btn.className = 'snippet-btn rounded-md bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-700';
+        btn.addEventListener('click', () => {
+          const key = btn.dataset.snippet;
+          const snippet = spatialSnippets[key];
+          if (!snippet) return;
 
-      document.getElementById('fileInput').addEventListener('change', async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-
-          if (!window.registerFile) {
-            console.warn('DuckDB not ready yet');
-            return;
-          }
-
-          await window.registerFile(file);
-        });(`Selected file: ${file.name}`);
+          editor.setValue(snippet);
+          editor.focus();
+        });
       });
 
-                  // Execute button -> call DuckDB when ready
+      document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!window.registerFile) {
+          console.warn('DuckDB not ready yet');
+          return;
+        }
+
+        await window.registerFile(file);
+
+        // Allow re-selecting the same file again
+        e.target.value = '';
+      });
+
+      // Execute button -> call DuckDB when ready
       document.getElementById('executeBtn').addEventListener('click', async () => {
-        console.log("window.editor:",window.editor)
-        console.log("typeof:",typeof window.editor)
-        const sql = window.editor.getValue();
+        const sql = editor.getValue();
 
         if (!window.executeSQL) {
           console.warn('DuckDB not ready yet');
@@ -97,12 +168,11 @@
         console.log('Executing SQL via DuckDB:');
         await window.executeSQL(sql);
       });
-
-      
+    });
   </script>
   <!-- DuckDB WASM (ESM, isolated from Monaco AMD loader) -->
   <script type="module">
-import * as duckdb from '@duckdb/duckdb-wasm';
+  import * as duckdb from '@duckdb/duckdb-wasm';
 import duckdb_wasm from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import mvp_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdb_wasm_eh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
@@ -118,8 +188,9 @@ const MANUAL_BUNDLES = {
         mainWorker: eh_worker,
     },
 };
-
+// Select a bundle based on browser checks
 const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
+
   const worker = new Worker(bundle.mainWorker);
   const logger = new duckdb.ConsoleLogger();
 
@@ -177,11 +248,64 @@ const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
     }
   };
 
+    const registeredFiles = [];
+
   window.registerFile = async (file) => {
     console.log('Registering file with DuckDB:', file.name);
 
     const buffer = await file.arrayBuffer();
     await db.registerFileBuffer(file.name, new Uint8Array(buffer));
+
+    // Track registered files
+    if (!registeredFiles.includes(file.name)) {
+      registeredFiles.push(file.name);
+    }
+
+    const list = document.getElementById('fileList');
+    list.innerHTML = '';
+
+    const renderList = () => {
+      list.innerHTML = '';
+      if (registeredFiles.length === 0) {
+        list.innerHTML = '<li class="text-slate-500">No files uploaded</li>';
+        return;
+      }
+
+      for (const name of registeredFiles) {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between gap-2 font-mono text-xs text-slate-300';
+
+        const span = document.createElement('span');
+        span.textContent = name;
+
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.className = 'text-slate-500 hover:text-red-400';
+        btn.title = 'Remove file';
+
+        btn.addEventListener('click', async () => {
+          try {
+            await db.dropFile(name);
+          } catch (e) {
+            console.warn('Failed to drop file from DuckDB:', e);
+          }
+
+          const idx = registeredFiles.indexOf(name);
+          if (idx !== -1) registeredFiles.splice(idx, 1);
+
+          const fileInput = document.getElementById('fileInput');
+          if (fileInput) fileInput.value = '';
+
+          renderList();
+        });
+
+        li.appendChild(span);
+        li.appendChild(btn);
+        list.appendChild(li);
+      }
+    };
+
+    renderList();
 
     const output = document.getElementById('output');
     output.innerHTML = `<p class="text-slate-400">File <strong>${file.name}</strong> registered. You can now query it.</p>`;
