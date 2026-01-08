@@ -57,7 +57,7 @@ Select
 from values ((ST_GeomFromGEOJSON('
 {
   "type": "Point",
-  "coordinates": [2.29451510025937, 48.8582718399929]
+  "coordinates": [48.8582718399929, 2.29451510025937 ]
   
 }'::json))) as t (geojson)
 `,
