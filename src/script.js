@@ -1,3 +1,5 @@
+import './monaco.js'
+
 import * as turf from '@turf/turf'
 import maplibregl from 'maplibre-gl';
 import * as duckdb from '@duckdb/duckdb-wasm';
